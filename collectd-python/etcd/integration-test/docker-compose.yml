@@ -1,0 +1,110 @@
+version: '2'
+
+x-common: &x-common
+  ports:
+  - 2379
+
+services:
+  collectd:
+    build:
+      context: ..
+      dockerfile: integration-test/Dockerfile.collectd
+    environment:
+      SF_API_TOKEN: testing
+      SF_INGEST_HOST: fake_sfx
+    depends_on:
+      - fake_sfx
+      - etcd208
+      - etcd238
+      - etcd310
+      - etcd324
+      - etcd324-tls-unverified
+
+  etcd208:
+    <<: *x-common
+    image: quay.io/coreos/etcd:v2.0.8
+    hostname: etcd208
+    command: >
+      --name etcd208
+      --advertise-client-urls http://etcd208:2379
+      --listen-client-urls http://0.0.0.0:2379
+      --initial-advertise-peer-urls http://etcd208:2380
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-cluster etcd208=http://etcd208:2380
+
+  etcd238:
+    <<: *x-common
+    image: quay.io/coreos/etcd:v2.3.8
+    hostname: etcd238
+    command: >
+      --name etcd238
+      --advertise-client-urls http://etcd238:2379
+      --listen-client-urls http://0.0.0.0:2379
+      --initial-advertise-peer-urls http://etcd238:2380
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-cluster etcd238=http://etcd238:2380
+
+  etcd310:
+    <<: *x-common
+    hostname: etcd310
+    image: quay.io/coreos/etcd:v3.1.0
+    command: >
+      etcd --name etcd310
+      --advertise-client-urls http://etcd310:2379
+      --listen-client-urls http://0.0.0.0:2379
+      --initial-advertise-peer-urls http://etcd310:2380
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-cluster etcd310=http://etcd310:2380
+
+  etcd324:
+    <<: *x-common
+    build:
+      context: .
+      dockerfile: Dockerfile.etcd32
+    hostname: etcd324
+    # Note: certs are valid for this container, has CN=etcd324.
+    command: >
+      etcd
+      --name etcd324
+      --trusted-ca-file /opt/testing/certs/server.crt
+      --cert-file /opt/testing/certs/server.crt
+      --key-file /opt/testing/certs/server.key
+      --client-cert-auth
+      --advertise-client-urls https://etcd324:2379
+      --listen-client-urls https://0.0.0.0:2379
+      --initial-advertise-peer-urls http://etcd324:2380
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-cluster etcd324=http://etcd324:2380
+
+  etcd324-tls-unverified:
+    <<: *x-common
+    build:
+      context: .
+      dockerfile: Dockerfile.etcd32
+    hostname: etcd324-tls-unverified
+    command: >
+      etcd
+      --name etcd324-tls-unverified
+      --trusted-ca-file /opt/testing/certs/server.crt
+      --cert-file /opt/testing/certs/server.crt
+      --key-file /opt/testing/certs/server.key
+      --client-cert-auth
+      --advertise-client-urls https://etcd324-tls-unverified:2379
+      --listen-client-urls https://0.0.0.0:2379
+      --initial-advertise-peer-urls http://etcd324-tls-unverified:2380
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-cluster etcd324-tls-unverified=http://etcd324-tls-unverified:2380
+
+  fake_sfx:
+    hostname: fake_sfx
+    stop_grace_period: 0s
+    build:
+      context: .
+      dockerfile: Dockerfile.sink
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - collectd

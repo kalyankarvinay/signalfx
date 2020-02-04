@@ -1,0 +1,7 @@
+*.pyc
+/.idea/
+/*.iml
+/.arcconfig
+.ropeproject
+.project
+.pydevproject

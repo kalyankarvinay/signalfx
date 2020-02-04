@@ -1,0 +1,14 @@
+*.pyc
+__pycache__/
+.tox/
+.cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+.idea/
+bin/
+lib/
+pyvenv.cfg
+.Python
+include/
